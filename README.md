@@ -1,9 +1,14 @@
+This is based on the [dataset](https://archive.ics.uci.edu/ml/datasets/Bank+Marketing) that is used for the paper " [A data-driven approach to predict the success of bank telemarketing](https://scholar.google.fr/scholar?q=A+data-driven+approach+to+predict+the+success+of+bank+telemarketing) ".
+
+The idea is to build a classifier that will predict who is going to purchase the product.
+
+IMHO it's a good dataset for training oneself in M.L. by building one classifier. After you can compare the results with the paper.
+
+
+## Notebooks
+* data-analyze.ipynb: Let's start with some data analysis of the dataset!
+
 ## Dataset
-### Context
-This is the dataset that is used for the paper " A data-driven approach to predict the success of bank telemarketing ".
-
-IMHO it's a good dataset for training oneself in M.L. by building one classifier. After you can compare your results with the paper.
-
 ### Content
 Input variables:
 
