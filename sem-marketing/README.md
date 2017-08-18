@@ -42,8 +42,8 @@ Online marketing is about solving 2 main problems:
 1. Solving a traffic problem: Is our product known? Do people arrive on our website? This can be solved in spending more money on SEM.
 2. Conversion problem: how many of the customers that arrive on our website will buy the product. This can be solved, for instance, in having a better design for the website.
 
-![High level schema of the system](https://user-images.githubusercontent.com/1684807/28922361-26f4fb14-785a-11e7-8e56-d94fe8360d3e.png)
+![High level schema of the system](https://user-images.githubusercontent.com/1684807/29459986-592523c0-8426-11e7-9416-9d2bd6e757a2.png)
 
 The model is divided in 2 sub-modules:
 1. The acquisition model: how many visits are going to be acquired today?
-2. The conversion model: given n customers on our website, how many are going to buy a product (aka how many are going to be converted to clients).
+2. The [conversion model](leads-prediction.ipynb): given n customers on our website, how many are going to buy a product.
