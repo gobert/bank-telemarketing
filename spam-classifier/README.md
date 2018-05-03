@@ -28,4 +28,4 @@ What could be improved:
 - Being more granular on header deletion
 - Evaluate all the hyperparameters of SGDClassifier and CountVectorizer
 - Digger deeper into the NaiveBayes models, because they are famous for providing good results on Spam detection
-- Use a harder dataset cf [1-get-dataset.py ](leads-prediction.ipynb)
+- Use a harder dataset cf [1-get-dataset.py ](1-get-dataset.py)
