@@ -1,14 +1,10 @@
 # Costa Rican Poverty
 
-Kaggle competition: https://www.kaggle.com/c/costa-rican-household-poverty-prediction
+This is a collection of notebooks related to the kaggle competition: [costa rican household poverty prediction.](https://www.kaggle.com/c/costa-rican-household-poverty-prediction)
 
-## To improve:
-* Model is extremly overfitting
-* Fine tune the model
-* Filling NaN value
-* Using categorical features
-* Work of children is allowed from 15 years old and after 18 more easy
+# Model evolution
 
-## July 22nd - F1-score macro 0.349
-82 / 106
-Simple model with the more important feature after a feature selection with random forest.
+* First try with a [**Feature selection** with Random Forest](feature-selection-with-random-forest.ipynb). The more surprising was a huge discrependcy between local F1-score and on kaggle.
+* **Evaluation**: [Reproduction of kaggle F1-score](how-to-reproduces-macro-f1-score-locally.ipynb). For that we should focus on household, not individual.
+* Evaluation of the [categorization of the children by age]().
+* [**PCA** on house features](feature-engineering-children.ipynb) (wall, roof, ...) and check its potential predictiveness
