@@ -3,6 +3,9 @@
  Some of my works related to data science:
 
 ### 2018
+###### August 2018 - Costa Rican Household Poverty Level Prediction
+[costa-rican-poverty](costa-rican-poverty): Notebooks & final predictor related to the [kaggle competition](https://www.kaggle.com/c/costa-rican-household-poverty-prediction).
+
 ###### June 2018 - Flower classification (iris dataset)
 [iris-classification](iris-classification): classification for the differnet types of iris flowers.
 
