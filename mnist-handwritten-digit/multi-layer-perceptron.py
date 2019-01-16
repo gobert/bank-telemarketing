@@ -1,5 +1,10 @@
 import tensorflow as tf
 import numpy as np
+from datetime import datetime
+
+now = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+root_logdir = 'tf_logs'
+logdir = "{}/run-{}/".format(root_logdir, now)
 
 n_inputs = 28 * 28
 n_hidden1 = 300
@@ -42,6 +47,11 @@ with tf.name_scope('eval'):
     correct = tf.nn.in_top_k(logits, y, 1)
     accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))  # TODO inspect with embed
 
+
+accuracy_summary = tf.summary.scalar('accuracy', accuracy)
+summary_writer = tf.summary.FileWriter(logdir, tf.get_default_graph())
+
+
 init = tf.global_variables_initializer()
 saver = tf.train.Saver()
 
@@ -70,12 +80,20 @@ def shuffle_batch(X, y, batch_size):
 
 
 with tf.Session() as sess:
+    saver.restore(sess, './MLP.ckpt')
     init.run()
     for epoch in range(n_epochs):
+        batch_index = 0
         for X_batch, y_batch in shuffle_batch(X_train, y_train, batch_size):
+            if batch_index % 10 == 0:
+                step = epoch * batch_size + batch_index
+                summary_str = accuracy_summary.eval(feed_dict={X: X_batch, y: y_batch})
+                summary_writer.add_summary(summary_str, step)
+            batch_index = batch_index + 1
             sess.run(training_op, feed_dict={X: X_batch, y: y_batch})
         acc_train = accuracy.eval(feed_dict={X: X_batch, y: y_batch})
         acc_val = accuracy.eval(feed_dict={X: X_valid, y: y_valid})
         print(epoch, 'Train accuracy: ', acc_train, 'Validation Accuracy', acc_val)
 
+    summary_writer.close()
     save_path = saver.save(sess, './MLP.ckpt')
