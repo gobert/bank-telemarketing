@@ -60,7 +60,7 @@ class DNNClassifier(BaseEstimator, ClassifierMixin):
 
             with tf.name_scope('eval'):
                 correct = tf.nn.in_top_k(logits, y, 1)
-                accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
+                accuracy = tf.reduce_mean(tf.cast(correct, tf.float32), name='accuracy')
 
             # expose important veriables
             self._X, self._y = X, y
@@ -68,6 +68,7 @@ class DNNClassifier(BaseEstimator, ClassifierMixin):
             self._loss, self._accuracy = loss, accuracy
 
             self._init = tf.global_variables_initializer()
+            self._saver = tf.train.Saver()
 
         self._session = tf.Session(graph=self._graph)
         with self._session.as_default() as sess:
@@ -135,3 +136,6 @@ clf.fit(X_train, y_train)
 
 pred = clf.predict(X_valid)
 print(accuracy_score(y_valid, pred))
+
+""" Serialize the best estimator """
+rnd_search.best_estimator_._saver.save(clf._session, './tf_models/transfer-MLP.ckpt')
