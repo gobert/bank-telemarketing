@@ -56,7 +56,7 @@ class DNNClassifier(BaseEstimator, ClassifierMixin):
 
             with tf.name_scope('train'):
                 optimizer = tf.train.AdamOptimizer(self.learning_rate)
-                training_op = optimizer.minimize(loss)
+                training_op = optimizer.minimize(loss, name='training_op')
 
             with tf.name_scope('eval'):
                 correct = tf.nn.in_top_k(logits, y, 1)
