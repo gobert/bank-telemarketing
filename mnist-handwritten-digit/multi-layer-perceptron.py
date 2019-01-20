@@ -1,10 +1,12 @@
 import tensorflow as tf
 import numpy as np
 from datetime import datetime
+import os
 
 now = datetime.utcnow().strftime("%Y%m%d%H%M%S")
 root_logdir = 'tf_logs'
 logdir = "{}/run-{}/".format(root_logdir, now)
+
 
 n_inputs = 28 * 28
 n_hidden1 = 300
@@ -51,7 +53,6 @@ with tf.name_scope('eval'):
 accuracy_summary = tf.summary.scalar('accuracy', accuracy)
 summary_writer = tf.summary.FileWriter(logdir, tf.get_default_graph())
 
-
 init = tf.global_variables_initializer()
 saver = tf.train.Saver()
 
@@ -79,10 +80,38 @@ def shuffle_batch(X, y, batch_size):
         yield X_batch, y_batch
 
 
-with tf.Session() as sess:
-    saver.restore(sess, './MLP.ckpt')
+class InteruptionProtector(object):
+    """ Save model after eah epoch to Hard Drive and restore it """
+    checkpoint_path = "/tmp/my_deep_mnist_model.ckpt"
+    checkpoint_epoch_path = checkpoint_path + ".epoch"
+    final_model_path = "./my_deep_mnist_model"
+
+    def __init__(self, session):
+        self.session = session
+
+    def load_if_interupted(self):
+        if os.path.isfile(InteruptionProtector.checkpoint_epoch_path):
+            with open(InteruptionProtector.checkpoint_epoch_path, 'rb') as f:
+                start_epoch = int(f.read())
+            print('Training was interrupted. Continuing at epoch', start_epoch)
+            saver.restore(self.session, InteruptionProtector.checkpoint_path)
+        else:
+            start_epoch = 0
+            self.session.run(init)
+        return start_epoch
+
+    def save_against_interuption(self):
+        with open(InteruptionProtector.checkpoint_epoch_path, "wb") as f:
+            f.write(b"%d" % (epoch + 1))
+
+
+tf_sess = tf.Session()
+protector = InteruptionProtector(tf_sess)
+with tf_sess.as_default():
+    start_epoch = protector.load_if_interupted()
     init.run()
-    for epoch in range(n_epochs):
+
+    for epoch in range(start_epoch, n_epochs):
         batch_index = 0
         for X_batch, y_batch in shuffle_batch(X_train, y_train, batch_size):
             if batch_index % 10 == 0:
@@ -90,10 +119,9 @@ with tf.Session() as sess:
                 summary_str = accuracy_summary.eval(feed_dict={X: X_batch, y: y_batch})
                 summary_writer.add_summary(summary_str, step)
             batch_index = batch_index + 1
-            sess.run(training_op, feed_dict={X: X_batch, y: y_batch})
+            tf_sess.run(training_op, feed_dict={X: X_batch, y: y_batch})
         acc_train = accuracy.eval(feed_dict={X: X_batch, y: y_batch})
         acc_val = accuracy.eval(feed_dict={X: X_valid, y: y_valid})
         print(epoch, 'Train accuracy: ', acc_train, 'Validation Accuracy', acc_val)
-
-    summary_writer.close()
-    save_path = saver.save(sess, './MLP.ckpt')
+        protector.save_against_interuption()
+        summary_writer.close()
