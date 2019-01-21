@@ -62,28 +62,24 @@ class DNNClassifier(BaseEstimator, ClassifierMixin):
 
             with tf.name_scope('dnn'):
                 he_init = tf.variance_scaling_initializer()
+                dropout_rate = 0.5
 
-                hidden1 = tf.layers.dense(X, 100, name='hidden1')
-                batch_norm1 = tf.layers.batch_normalization(hidden1, training=training, momentum=0.9)
-                bn_act1 = tf.nn.elu(batch_norm1)
+                hidden1 = tf.layers.dense(X, 100, activation=tf.nn.relu, name='hidden1')
+                hidden1_drop = tf.layers.dropout(hidden1, dropout_rate, training=training)
 
-                hidden2 = tf.layers.dense(bn_act1, 100, name='hidden2')
-                batch_norm2 = tf.layers.batch_normalization(hidden2, training=training, momentum=0.9)
-                bn_act2 = tf.nn.elu(batch_norm2)
+                hidden2 = tf.layers.dense(hidden1_drop, 100, activation=tf.nn.relu, name='hidden2')
+                hidden2_drop = tf.layers.dropout(hidden2, dropout_rate, training=training)
 
-                hidden3 = tf.layers.dense(bn_act2, 100, name='hidden3')
-                batch_norm3 = tf.layers.batch_normalization(hidden3, training=training, momentum=0.9)
-                bn_act3 = tf.nn.elu(batch_norm3)
+                hidden3 = tf.layers.dense(hidden2_drop, 100, activation=tf.nn.relu, name='hidden3')
+                hidden3_drop = tf.layers.dropout(hidden3, dropout_rate, training=training)
 
-                hidden4 = tf.layers.dense(bn_act3, 100, name='hidden4')
-                batch_norm4 = tf.layers.batch_normalization(hidden4, training=training, momentum=0.9)
-                bn_act4 = tf.nn.elu(batch_norm4)
+                hidden4 = tf.layers.dense(hidden3_drop, 100, activation=tf.nn.relu, name='hidden4')
+                hidden4_drop = tf.layers.dropout(hidden4, dropout_rate, training=training)
 
-                hidden5 = tf.layers.dense(bn_act4, 100, name='hidden5')
-                batch_norm5 = tf.layers.batch_normalization(hidden5, training=training, momentum=0.9)
-                bn_act5 = tf.nn.elu(batch_norm5)
+                hidden5 = tf.layers.dense(hidden4_drop, 100, activation=tf.nn.relu, name='hidden5')
+                hidden5_drop = tf.layers.dropout(hidden5, dropout_rate, training=training)
 
-                logits = tf.layers.dense(bn_act5, n_outputs,  kernel_initializer=he_init, name='logits')
+                logits = tf.layers.dense(hidden5_drop, n_outputs,  kernel_initializer=he_init, name='logits')
 
                 y_proba = tf.nn.softmax(logits, name='y_proba')
 
