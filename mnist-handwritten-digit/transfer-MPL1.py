@@ -31,7 +31,7 @@ class InteruptionProtector(object):
         return start_epoch
 
     def save_against_interuption(self, epoch):
-        self.saver.save(self.session, InteruptionProtectorcheckpoint_path)
+        self.saver.save(self.session, InteruptionProtector.checkpoint_path)
         with open(InteruptionProtector.checkpoint_epoch_path, "wb") as f:
             f.write(b"%d" % (epoch + 1))
 
@@ -53,28 +53,33 @@ class DNNClassifier(BaseEstimator, ClassifierMixin):
 
             X = tf.placeholder(tf.float32, shape=[None, n_inputs], name='X')
             y = tf.placeholder(tf.int32, shape=[None], name='y')
+            training = tf.placeholder_with_default(False, shape=(), name='training')
 
             with tf.name_scope('dnn'):
                 he_init = tf.variance_scaling_initializer()
 
-                hidden1 = tf.layers.dense(X, 100, name='hidden1',
-                                          activation=tf.nn.elu,
-                                          kernel_initializer=he_init)
-                hidden2 = tf.layers.dense(hidden1, 100, name='hidden2',
-                                          activation=tf.nn.elu,
-                                          kernel_initializer=he_init)
-                hidden3 = tf.layers.dense(hidden2, 100, name='hidden3',
-                                          activation=tf.nn.elu,
-                                          kernel_initializer=he_init)
-                hidden4 = tf.layers.dense(hidden3, 100, name='hidden4',
-                                          activation=tf.nn.elu,
-                                          kernel_initializer=he_init)
-                hidden5 = tf.layers.dense(hidden4, 100, name='hidden5',
-                                          activation=tf.nn.elu,
-                                          kernel_initializer=he_init)
-                logits = tf.layers.dense(hidden5, n_outputs, name='logits',
-                                         activation=tf.nn.elu,
-                                         kernel_initializer=he_init)
+                hidden1 = tf.layers.dense(X, 100, name='hidden1')
+                batch_norm1 = tf.layers.batch_normalization(hidden1, training=training, momentum=0.9)
+                bn_act1 = tf.nn.elu(batch_norm1)
+
+                hidden2 = tf.layers.dense(bn_act1, 100, name='hidden2')
+                batch_norm2 = tf.layers.batch_normalization(hidden2, training=training, momentum=0.9)
+                bn_act2 = tf.nn.elu(batch_norm2)
+
+                hidden3 = tf.layers.dense(bn_act2, 100, name='hidden3')
+                batch_norm3 = tf.layers.batch_normalization(hidden3, training=training, momentum=0.9)
+                bn_act3 = tf.nn.elu(batch_norm3)
+
+                hidden4 = tf.layers.dense(bn_act3, 100, name='hidden4')
+                batch_norm4 = tf.layers.batch_normalization(hidden4, training=training, momentum=0.9)
+                bn_act4 = tf.nn.elu(batch_norm4)
+
+                hidden5 = tf.layers.dense(bn_act4, 100, name='hidden5')
+                batch_norm5 = tf.layers.batch_normalization(hidden5, training=training, momentum=0.9)
+                bn_act5 = tf.nn.elu(batch_norm5)
+
+                logits = tf.layers.dense(bn_act5, n_outputs,  kernel_initializer=he_init, name='logits')
+
                 y_proba = tf.nn.softmax(logits, name='y_proba')
 
             with tf.name_scope('loss'):
@@ -161,7 +166,7 @@ param_distribs = {
     'n_epochs': [10, 50, 100]
 }
 
-clf = DNNClassifier(learning_rate=0.0001, n_epochs=10, batch_size=50)
+clf = DNNClassifier(learning_rate=0.0001, n_epochs=100, batch_size=50)
 # rnd_search = RandomizedSearchCV(clf, param_distribs, n_iter=4, cv=3, verbose=2)
 # rnd_search.fit(X_train, y_train)
 clf.fit(X_train, y_train)
