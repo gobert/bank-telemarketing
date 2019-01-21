@@ -5,6 +5,35 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.metrics import accuracy_score
 from sklearn.exceptions import NotFittedError
+import os
+
+
+class InteruptionProtector(object):
+    """ Save model after eah epoch to Hard Drive and restore it """
+    checkpoint_path = "/tmp/my_deep_mnist_model.ckpt"
+    checkpoint_epoch_path = checkpoint_path + ".epoch"
+    final_model_path = "./my_deep_mnist_model"
+
+    def __init__(self, session, saver, init):
+        self.session = session
+        self.saver = saver
+        self.init = init
+
+    def load_if_interupted(self):
+        if os.path.isfile(InteruptionProtector.checkpoint_epoch_path):
+            with open(InteruptionProtector.checkpoint_epoch_path, 'rb') as f:
+                start_epoch = int(f.read())
+            print('Training was interrupted. Continuing at epoch', start_epoch)
+            self.saver.restore(self.session, InteruptionProtector.checkpoint_path)
+        else:
+            start_epoch = 0
+            self.session.run(self.init)
+        return start_epoch
+
+    def save_against_interuption(self, epoch):
+        self.saver.save(self.session, InteruptionProtectorcheckpoint_path)
+        with open(InteruptionProtector.checkpoint_epoch_path, "wb") as f:
+            f.write(b"%d" % (epoch + 1))
 
 
 class DNNClassifier(BaseEstimator, ClassifierMixin):
@@ -56,13 +85,13 @@ class DNNClassifier(BaseEstimator, ClassifierMixin):
 
             with tf.name_scope('train'):
                 optimizer = tf.train.AdamOptimizer(self.learning_rate)
-                training_op = optimizer.minimize(loss, name='training_op')
+                training_op = optimizer.minimize(loss)
 
             with tf.name_scope('eval'):
                 correct = tf.nn.in_top_k(logits, y, 1)
                 accuracy = tf.reduce_mean(tf.cast(correct, tf.float32), name='accuracy')
 
-            # expose important veriables
+            # expose important variables
             self._X, self._y = X, y
             self._y_proba, self._logits, = y_proba, logits
             self._loss, self._accuracy = loss, accuracy
@@ -71,9 +100,11 @@ class DNNClassifier(BaseEstimator, ClassifierMixin):
             self._saver = tf.train.Saver()
 
         self._session = tf.Session(graph=self._graph)
+        self.protector = InteruptionProtector(self._session, self._saver, self._init)
         with self._session.as_default() as sess:
+            start_epoch = self.protector.load_if_interupted()
             self._init.run()
-            for epoch in range(self.n_epochs):
+            for epoch in range(start_epoch, self.n_epochs):
                 batch_index = 0
                 batches = self.__shuffle_batch__(X_train, y_train,
                                                  self.batch_size)
@@ -84,6 +115,7 @@ class DNNClassifier(BaseEstimator, ClassifierMixin):
                 acc_train = accuracy.eval(feed_dict={self._X: X_batch,
                                                      self._y: y_batch})
                 print(epoch, 'Train accuracy: ', acc_train)
+                self.protector.save_against_interuption(epoch)
             return self
 
     def predict(self, X):
@@ -130,12 +162,12 @@ param_distribs = {
 }
 
 clf = DNNClassifier(learning_rate=0.0001, n_epochs=10, batch_size=50)
-rnd_search = RandomizedSearchCV(clf, param_distribs, n_iter=4, cv=3, verbose=2)
-rnd_search.fit(X_train, y_train)
+# rnd_search = RandomizedSearchCV(clf, param_distribs, n_iter=4, cv=3, verbose=2)
+# rnd_search.fit(X_train, y_train)
 clf.fit(X_train, y_train)
 
 pred = clf.predict(X_valid)
 print(accuracy_score(y_valid, pred))
 
 """ Serialize the best estimator """
-rnd_search.best_estimator_._saver.save(clf._session, './tf_models/transfer-MLP.ckpt')
+clf._saver.save(clf._session, './tf_models/transfer-MLP.ckpt')
