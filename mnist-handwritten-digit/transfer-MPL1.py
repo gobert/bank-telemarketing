@@ -5,6 +5,7 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.metrics import accuracy_score
 from sklearn.exceptions import NotFittedError
+from datetime import datetime
 import os
 
 
@@ -43,7 +44,11 @@ class DNNClassifier(BaseEstimator, ClassifierMixin):
         self.batch_size = batch_size
         self._session = None
 
-    def fit(self, X_train, y_train):
+        now = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+        root_logdir = 'tf_logs'
+        self.logdir = "{}/run-{}/".format(root_logdir, now)
+
+    def fit(self, X_train, y_train, X_valid=None, y_valid=None):
         self.close_session()
 
         self._graph = tf.Graph()
@@ -105,6 +110,9 @@ class DNNClassifier(BaseEstimator, ClassifierMixin):
             self._saver = tf.train.Saver()
 
         self._session = tf.Session(graph=self._graph)
+        self._accuracy_summary = tf.summary.scalar('acc valid', self._accuracy)
+        self._accuracy_summary2 = tf.summary.scalar('acc train', self._accuracy)
+        self._summary_writer = tf.summary.FileWriter(self.logdir, tf.get_default_graph())
         self.protector = InteruptionProtector(self._session, self._saver, self._init)
         with self._session.as_default() as sess:
             start_epoch = self.protector.load_if_interupted()
@@ -119,8 +127,15 @@ class DNNClassifier(BaseEstimator, ClassifierMixin):
                     sess.run(training_op, feed_dict=feed_dict)
                 acc_train = accuracy.eval(feed_dict={self._X: X_batch,
                                                      self._y: y_batch})
-                print(epoch, 'Train accuracy: ', acc_train)
+
+                acc_valid = accuracy.eval(feed_dict={X: X_valid, y: y_valid})
+                print(epoch, 'Train accuracy: ', acc_train, 'Valid accuracy: ', acc_valid)
+                summary_str = self._accuracy_summary.eval(feed_dict={X: X_valid, y: y_valid})
+                summary_str2 = self._accuracy_summary2.eval(feed_dict={X: X_train, y: y_train})
+                self._summary_writer.add_summary(summary_str, epoch)
+                self._summary_writer.add_summary(summary_str2, epoch)
                 self.protector.save_against_interuption(epoch)
+            self._summary_writer.close()
             return self
 
     def predict(self, X):
@@ -169,7 +184,7 @@ param_distribs = {
 clf = DNNClassifier(learning_rate=0.0001, n_epochs=100, batch_size=50)
 # rnd_search = RandomizedSearchCV(clf, param_distribs, n_iter=4, cv=3, verbose=2)
 # rnd_search.fit(X_train, y_train)
-clf.fit(X_train, y_train)
+clf.fit(X_train, y_train, X_valid=X_valid, y_valid=y_valid)
 
 pred = clf.predict(X_valid)
 print(accuracy_score(y_valid, pred))
